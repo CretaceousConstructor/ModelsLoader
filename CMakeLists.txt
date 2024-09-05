@@ -44,7 +44,6 @@ message(STATUS "Installing fastgltf via submodule")
 set(BUILD_STATIC_LIBS ON)
 add_subdirectory(external/fastgltf)
 set_property(TARGET fastgltf PROPERTY FOLDER "Dependencies")
-set_property(TARGET fastgltf_simdjson PROPERTY FOLDER "Dependencies")
 
 
 # 
@@ -58,7 +57,7 @@ set_property(TARGET spdlog PROPERTY FOLDER "Dependencies")
 message(STATUS "Installing glm via submodule")
 set(BUILD_STATIC_LIBS ON)
 add_subdirectory(external/glm/glm)
-set_property(TARGET glm_static PROPERTY FOLDER "Dependencies")
+set_property(TARGET glm PROPERTY FOLDER "Dependencies")
 
 
 # Stb image
@@ -94,7 +93,7 @@ target_link_libraries(
     PRIVATE
     fastgltf
     spdlog
-    glm_static
+    glm
     stb_image
 )
 
@@ -111,7 +110,7 @@ add_dependencies(
     ${PROJECT_NAME}
     fastgltf
     spdlog
-    glm_static
+    glm
     stb_image
 )
 

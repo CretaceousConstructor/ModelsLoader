@@ -1,13 +1,15 @@
 ﻿#pragma once
 #include <filesystem>
 #include <ranges>
-#include <fastgltf/glm_element_traits.hpp>
-#include <fastgltf/parser.hpp>
-#include <fastgltf/tools.hpp>
-#include <fastgltf/types.hpp>
-#include <fastgltf/util.hpp>
-#include "glm/gtx/compatibility.hpp"
-#include "glm/gtx/quaternion.hpp"
+
+#include "fastgltf/core.hpp"
+#include "fastgltf/types.hpp"
+#include "fastgltf/util.hpp"
+#include "fastgltf/tools.hpp"
+
+#include "glm/glm.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtc/matrix_transform.hpp" 
 #include "spdlog/spdlog.h"
 
 namespace Anni
@@ -81,11 +83,11 @@ namespace Anni
 		class LoadedVertex
 		{
 		public:
-			glm::float4 color;
-			glm::float3 position;
-			glm::float3 normal;
-			glm::float3 tangent;
-			glm::float2 uv;
+			glm::vec4 color;
+			glm::vec4 tangent;
+			glm::vec3 position;
+			glm::vec3 normal;
+			glm::vec2 uv;
 		};
 
 		struct LoadedMeshAsset
@@ -126,7 +128,7 @@ namespace Anni
 		public:
 			IRenderable() = default;
 
-			virtual void DrawStaticToContext(const glm::mat4& top_matrix, DrawContext& ctx) = 0;
+			virtual void PreDrawToContext(const glm::mat4& top_matrix, DrawContext& ctx) = 0;
 			virtual ~IRenderable() = default;
 		};
 
@@ -145,7 +147,7 @@ namespace Anni
 			glm::mat4 world_transform;
 
 			void RefreshTransform(const glm::mat4& parent_matrix);
-			void DrawStaticToContext(const glm::mat4& top_matrix, DrawContext& ctx) override;
+			void PreDrawToContext(const glm::mat4& top_matrix, DrawContext& ctx) override;
 		};
 
 		struct MeshNode : public Node
@@ -155,10 +157,10 @@ namespace Anni
 
 			MeshNode() = delete;
 			~MeshNode() override = default;
-			void DrawStaticToContext(const glm::mat4& top_matrix, DrawContext& ctx) override;
+			void PreDrawToContext(const glm::mat4& top_matrix, DrawContext& ctx) override;
 
 		private:
-			// observer pointer
+			// OBSERVER POINTER
 			const LoadedMeshAsset* const mesh_asset;
 		};
 
@@ -166,14 +168,17 @@ namespace Anni
 		class LoadingResult
 		{
 		public:
+
 			friend  std::unique_ptr<LoadingResult> LoadFromFile(const std::filesystem::path file_path);
-			friend  void LoadGltf(const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser, std::unique_ptr<LoadingResult>& loading_result);
-			friend  void LoadRawGltf(fastgltf::GltfDataBuffer& data, fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser);
-			friend  void LoadSamplers(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
-			friend  void LoadTextureImages(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadingResult>& loading_result);
-			friend  void LoadMaterials(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadingResult>& loading_result);
-			friend  void LoadMeshes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
-			friend  void LoadSceneNodes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
+
+			friend void LoadGltf(const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser, std::unique_ptr<Anni::ModelLoader::LoadingResult>& loading_result);
+			friend void LoadRawGltf(fastgltf::GltfDataBuffer& data, fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser);
+			friend void LoadSamplers(const fastgltf::Asset& gltf_asset, std::unique_ptr<Anni::ModelLoader::LoadingResult>& loading_result);
+			friend void LoadTextureImages(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadingResult>& loading_result);
+			friend void LoadMaterials(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<Anni::ModelLoader::LoadingResult>& loading_result);
+			friend void LoadMeshes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
+			friend void LoadSceneNodes(const fastgltf::Asset& gltf_asset, std::unique_ptr<Anni::ModelLoader::LoadingResult>& loading_result);
+			friend void LoadSceneGraph(const fastgltf::Asset& gltf_asset, std::unique_ptr<Anni::ModelLoader::LoadingResult>& loading_result);
 
 			LoadingResult(std::filesystem::path file_path);
 			LoadingResult() = delete;
@@ -189,25 +194,11 @@ namespace Anni
 			std::vector<LoadedMaterialConstant>   m_materials;
 			std::vector<LoadedMeshAsset>          m_mesh_assets;
 			std::vector<std::shared_ptr<Node>>    m_scene_nodes;
+			std::vector<std::shared_ptr<Node>>    m_top_nodes;
 
 		};
 
-
 		std::unique_ptr<LoadingResult> LoadFromFile(const std::filesystem::path file_path);
-
-		void LoadGltf(const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser, std::unique_ptr<LoadingResult>& loading_result);
-		void LoadRawGltf(fastgltf::GltfDataBuffer& data, fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser);
-		void LoadSamplers(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
-		void LoadTextureImages(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadingResult>& loading_result);
-		void LoadMaterials(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadingResult>& loading_result);
-		void LoadMeshes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
-		void LoadSceneNodes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadingResult>& loading_result);
-
-		LoadedSampler::AddressMode ExtractAddressMode(const fastgltf::Wrap warp);
-		LoadedSampler::SamplerType ExtractMagSamplerType(const fastgltf::Filter filter);
-		LoadedSampler::SamplerType ExtractMinSamplerType(const fastgltf::Filter filter);
-		LoadedSampler::SamplerType ExtractMipMapSamplerType(const fastgltf::Filter filter);
-
 	}
 
 
