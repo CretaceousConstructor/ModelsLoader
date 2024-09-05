@@ -2,8 +2,10 @@
 #include "ModelsLoader.h"
 #include "stb_image.h"            //TODO: stb image need some marco to work
 
+Anni::ModelLoader::LoadedModel::Factory  Anni::ModelLoader::LoadedModel::factory{};
 namespace Anni::ModelLoader
 {
+
 	void LoadedModel::Factory::LoadGltf(const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser, std::unique_ptr<LoadedModel>& loading_result)
 	{
 		fastgltf::Asset gltf_asset{};
@@ -20,23 +22,26 @@ namespace Anni::ModelLoader
 
 	void LoadedModel::Factory::LoadRawGltf(fastgltf::GltfDataBuffer& data, fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser)
 	{
+
+
 		//> LOAD_RAW GLTF RAW FILE LOADING
 		constexpr auto gltf_loading_options = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadExternalBuffers;
 
 		auto result_buffer = fastgltf::GltfDataBuffer::FromPath(file_path);
 
-		if (!result_buffer)
+		if ( !result_buffer )
 		{
-			SPDLOG_ERROR("Provided file path is invalid!");
+			SPDLOG_ERROR("Failed to load data buffer from given file path.");
 			std::exit(EXIT_FAILURE); // or std::exit(1);
 		}
 		data = std::move(result_buffer.get());
 		const fastgltf::GltfType gltf_type = determineGltfFileType(data);
 
-		if (fastgltf::GltfType::glTF == gltf_type)
+		if ( fastgltf::GltfType::glTF == gltf_type )
 		{
 			auto load = gltf_parser.loadGltf(data, file_path.parent_path(), gltf_loading_options);
-			if (load)
+			SPDLOG_INFO("Parsing file from gltf directory: {}", file_path.parent_path().string());
+			if ( load )
 			{
 				gltf_asset = std::move(load.get());
 			}
@@ -46,11 +51,11 @@ namespace Anni::ModelLoader
 				std::exit(EXIT_FAILURE); // or std::exit(1);
 			}
 		}
-		else if (fastgltf::GltfType::GLB == gltf_type)
+		else if ( fastgltf::GltfType::GLB == gltf_type )
 		{
 			auto load = gltf_parser.loadGltfBinary(data, file_path.parent_path(), gltf_loading_options);
 
-			if (load)
+			if ( load )
 			{
 				gltf_asset = std::move(load.get());
 			}
@@ -70,7 +75,7 @@ namespace Anni::ModelLoader
 	void LoadedModel::Factory::LoadSamplers(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadedModel>& loading_result)
 	{
 		loading_result->m_samplers.reserve(gltf_asset.samplers.size());
-		for (const fastgltf::Sampler& sampler : gltf_asset.samplers)
+		for ( const fastgltf::Sampler& sampler : gltf_asset.samplers )
 		{
 			LoadedSampler loaded_sampler{};
 			loaded_sampler.mag = ExtractMagSamplerType(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
@@ -87,60 +92,60 @@ namespace Anni::ModelLoader
 	LoadedSampler::AddressMode LoadedModel::Factory::ExtractAddressMode(const fastgltf::Wrap warp)
 	{
 		//read the spec, found out this is the way they define this
-		switch (warp)
+		switch ( warp )
 		{
-		case fastgltf::Wrap::ClampToEdge:
-			return LoadedSampler::AddressMode::ClampToEdge;
-		case fastgltf::Wrap::MirroredRepeat:
-			return LoadedSampler::AddressMode::MirroredRepeat;
-		case fastgltf::Wrap::Repeat:
-			return LoadedSampler::AddressMode::Repeat;
+			case fastgltf::Wrap::ClampToEdge:
+				return LoadedSampler::AddressMode::ClampToEdge;
+			case fastgltf::Wrap::MirroredRepeat:
+				return LoadedSampler::AddressMode::MirroredRepeat;
+			case fastgltf::Wrap::Repeat:
+				return LoadedSampler::AddressMode::Repeat;
 		}
 	}
 
 	LoadedSampler::SamplerType LoadedModel::Factory::ExtractMagSamplerType(const fastgltf::Filter filter)
 	{
 		//read the spec, found out this is the way they define this
-		switch (filter)
+		switch ( filter )
 		{
-		case fastgltf::Filter::Nearest:
-			return LoadedSampler::SamplerType::Nearest;
-		case fastgltf::Filter::Linear:
-			return LoadedSampler::SamplerType::Linear;
-		default:
-			return LoadedSampler::SamplerType::Nearest;
+			case fastgltf::Filter::Nearest:
+				return LoadedSampler::SamplerType::Nearest;
+			case fastgltf::Filter::Linear:
+				return LoadedSampler::SamplerType::Linear;
+			default:
+				return LoadedSampler::SamplerType::Nearest;
 		}
 	}
 
 	LoadedSampler::SamplerType LoadedModel::Factory::ExtractMinSamplerType(const fastgltf::Filter filter)
 	{
-		switch (filter)
+		switch ( filter )
 		{
-		case fastgltf::Filter::Nearest:
-		case fastgltf::Filter::NearestMipMapNearest:
-		case fastgltf::Filter::NearestMipMapLinear:
-			return LoadedSampler::SamplerType::Nearest;
+			case fastgltf::Filter::Nearest:
+			case fastgltf::Filter::NearestMipMapNearest:
+			case fastgltf::Filter::NearestMipMapLinear:
+				return LoadedSampler::SamplerType::Nearest;
 
-		case fastgltf::Filter::Linear:
-		case fastgltf::Filter::LinearMipMapNearest:
-		case fastgltf::Filter::LinearMipMapLinear:
-			return LoadedSampler::SamplerType::Linear;
+			case fastgltf::Filter::Linear:
+			case fastgltf::Filter::LinearMipMapNearest:
+			case fastgltf::Filter::LinearMipMapLinear:
+				return LoadedSampler::SamplerType::Linear;
 		}
 	}
 
 	LoadedSampler::SamplerType LoadedModel::Factory::ExtractMipMapSamplerType(const fastgltf::Filter filter)
 	{
-		switch (filter)
+		switch ( filter )
 		{
-		case fastgltf::Filter::Nearest:
-		case fastgltf::Filter::NearestMipMapNearest:
-		case fastgltf::Filter::LinearMipMapNearest:
-			return LoadedSampler::SamplerType::Nearest;
+			case fastgltf::Filter::Nearest:
+			case fastgltf::Filter::NearestMipMapNearest:
+			case fastgltf::Filter::LinearMipMapNearest:
+				return LoadedSampler::SamplerType::Nearest;
 
-		case fastgltf::Filter::Linear:
-		case fastgltf::Filter::NearestMipMapLinear:
-		case fastgltf::Filter::LinearMipMapLinear:
-			return LoadedSampler::SamplerType::Linear;
+			case fastgltf::Filter::Linear:
+			case fastgltf::Filter::NearestMipMapLinear:
+			case fastgltf::Filter::LinearMipMapLinear:
+				return LoadedSampler::SamplerType::Linear;
 		}
 	}
 
@@ -148,7 +153,7 @@ namespace Anni::ModelLoader
 	{
 		loading_result->m_textures.reserve(gltf_asset.images.size());
 		//> LOAD ALL TEXTURES
-		for (const auto& image : gltf_asset.images)
+		for ( const auto& image : gltf_asset.images )
 		{
 			const std::string img_name = image.name.c_str();
 			loading_result->m_textures.emplace_back(img_name);
@@ -156,7 +161,7 @@ namespace Anni::ModelLoader
 
 			int width = 0, height = 0, num_channels = 0;
 			{
-				if (std::get_if<fastgltf::sources::URI>(&image.data))
+				if ( std::get_if<fastgltf::sources::URI>(&image.data) )
 				{
 					const fastgltf::sources::URI* p_img_loca_Path_URI = std::get_if<fastgltf::sources::URI>(&image.data);
 					const auto& img_loca_path_URI = *p_img_loca_Path_URI;
@@ -165,13 +170,13 @@ namespace Anni::ModelLoader
 					loading_result->m_textures.back().file_name.value().append(img_local_uri);
 
 
-					if (img_loca_path_URI.fileByteOffset != 0) // We don't support offsets with stbi.
+					if ( img_loca_path_URI.fileByteOffset != 0 ) // We don't support offsets with stbi.
 					{
 						SPDLOG_ERROR("Don't support offsets with stbi.");
 						std::exit(EXIT_FAILURE); // or std::exit(1);
 					}
 
-					if (!img_loca_path_URI.uri.isLocalPath()) // We're only capable of loading local files.
+					if ( !img_loca_path_URI.uri.isLocalPath() ) // We're only capable of loading local files.
 					{
 						SPDLOG_ERROR("Only capable of loading local files.");
 						std::exit(EXIT_FAILURE); // or std::exit(1);
@@ -185,9 +190,9 @@ namespace Anni::ModelLoader
 
 					constexpr int desired_components = 4;
 					unsigned char* const temp_tex_data = stbi_load(absolute_path.generic_string().c_str(), &width,
-					                                               &height, &num_channels, desired_components);
+																   &height, &num_channels, desired_components);
 
-					if (!(num_channels == 4 || num_channels == 3))
+					if ( !(num_channels == 4 || num_channels == 3) )
 					{
 						SPDLOG_ERROR("Unsupported number of channels.");
 						std::exit(EXIT_FAILURE); // or std::exit(1);
@@ -195,7 +200,7 @@ namespace Anni::ModelLoader
 					loaded_image.num_channels = num_channels;
 					loaded_image.mipmap_size = 1;
 					loaded_image.array_size = 1;
-					if (temp_tex_data)
+					if ( temp_tex_data )
 					{
 						const uint64_t tex_width = width;
 						const uint64_t tex_height = height;
@@ -220,7 +225,7 @@ namespace Anni::ModelLoader
 	void LoadedModel::Factory::LoadMaterials(const fastgltf::Asset& gltf_asset, const std::filesystem::path& file_path, std::unique_ptr<LoadedModel>& loading_result)
 	{
 		loading_result->m_materials.reserve(gltf_asset.materials.size());
-		for (const auto& mat : gltf_asset.materials)
+		for ( const auto& mat : gltf_asset.materials )
 		{
 			LoadedMaterialConstant constants;
 			constants.base_color_factors[0] = mat.pbrData.baseColorFactor[0];
@@ -231,50 +236,50 @@ namespace Anni::ModelLoader
 			constants.metallic_factor = mat.pbrData.metallicFactor;
 			constants.roughness_factor = mat.pbrData.roughnessFactor;
 
-			switch (mat.alphaMode)
+			switch ( mat.alphaMode )
 			{
-			case fastgltf::AlphaMode::Opaque:
-				constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Opaque;
-			case fastgltf::AlphaMode::Blend:
-				constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Blend;
-			case fastgltf::AlphaMode::Mask:
-				constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Mask;
-				constants.alpha_cutoff = mat.alphaCutoff;
+				case fastgltf::AlphaMode::Opaque:
+					constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Opaque;
+				case fastgltf::AlphaMode::Blend:
+					constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Blend;
+				case fastgltf::AlphaMode::Mask:
+					constants.alpha_mode = LoadedMaterialConstant::AlphaMode::Mask;
+					constants.alpha_cutoff = mat.alphaCutoff;
 			}
 
 			// install m_textures index
-			if (mat.pbrData.baseColorTexture.has_value())
+			if ( mat.pbrData.baseColorTexture.has_value() )
 			{
 				constants.albedo_index = gltf_asset.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
 				constants.albedo_sampler_index = gltf_asset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 			}
 
-			if (mat.pbrData.metallicRoughnessTexture.has_value())
+			if ( mat.pbrData.metallicRoughnessTexture.has_value() )
 			{
 				constants.metal_roughness_index = gltf_asset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
 				constants.metal_roughness_sampler_index = gltf_asset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
 			}
 
-			if (mat.normalTexture.has_value())
+			if ( mat.normalTexture.has_value() )
 			{
 				constants.normal_index = gltf_asset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
 				constants.normal_sampler_index = gltf_asset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
 			}
 
-			if (mat.emissiveTexture.has_value())
+			if ( mat.emissiveTexture.has_value() )
 			{
 				constants.emissive_index = gltf_asset.textures[mat.emissiveTexture.value().textureIndex]
-				                           .imageIndex.value();
+					.imageIndex.value();
 				constants.emissive_sampler_index = gltf_asset.textures[mat.emissiveTexture.value().textureIndex]
-				                                   .samplerIndex.value();
+					.samplerIndex.value();
 			}
 
-			if (mat.occlusionTexture.has_value())
+			if ( mat.occlusionTexture.has_value() )
 			{
 				constants.occlusion_index = gltf_asset.textures[mat.occlusionTexture.value().textureIndex]
-				                            .imageIndex.value();
+					.imageIndex.value();
 				constants.occlusion_sampler_index = gltf_asset.textures[mat.occlusionTexture.value().textureIndex]
-				                                    .samplerIndex.value();
+					.samplerIndex.value();
 			}
 			loading_result->m_materials.push_back(constants);
 		}
@@ -288,9 +293,9 @@ namespace Anni::ModelLoader
 
 		loading_result->m_mesh_assets.resize(gltf_asset.meshes.size());
 
-		for (auto [mesh_index, mesh] : std::ranges::views::enumerate(gltf_asset.meshes))
+		for ( auto [mesh_index, mesh] : std::ranges::views::enumerate(gltf_asset.meshes) )
 		{
-			std::string mesh_name{mesh.name};
+			std::string mesh_name{ mesh.name };
 			loading_result->m_mesh_assets[mesh_index].name = mesh_name.append(std::to_string(mesh_index));
 
 			// clear the mesh_asset arrays each mesh_asset, we don't want to merge them by error
@@ -298,11 +303,11 @@ namespace Anni::ModelLoader
 			vertices.clear();
 
 			// process homo mat tris
-			for (auto&& primitive : mesh.primitives)
+			for ( auto&& primitive : mesh.primitives )
 			{
 				LoadedMeshAsset::HomoMatTris homo_mat_tris;
-				homo_mat_tris.start_index = static_cast<uint32_t>(indices.size());
-				homo_mat_tris.count = static_cast<uint32_t>(gltf_asset.accessors[primitive.indicesAccessor.value()].count);
+				homo_mat_tris.start_index = static_cast< uint32_t >(indices.size());
+				homo_mat_tris.count = static_cast< uint32_t >(gltf_asset.accessors[primitive.indicesAccessor.value()].count);
 
 				size_t initial_vtx = vertices.size();
 
@@ -330,31 +335,31 @@ namespace Anni::ModelLoader
 						{
 							LoadedVertex newvtx;
 							newvtx.position = glm::vec3(v[0], v[1], v[2]);
-							newvtx.normal = {0, 1, 0};
-							newvtx.color = glm::vec4{1.f};
-							newvtx.uv = glm::vec2{0.f, 0.f};
-							newvtx.tangent = {1, 0, 0, 0};
+							newvtx.normal = { 0, 1, 0 };
+							newvtx.color = glm::vec4{ 1.f };
+							newvtx.uv = glm::vec2{ 0.f, 0.f };
+							newvtx.tangent = { 1, 0, 0, 0 };
 							vertices[initial_vtx + index] = newvtx;
 						});
 				}
 
 				// load vertex normals
 				const auto normals = primitive.findAttribute("NORMAL");
-				if (normals != primitive.attributes.end())
+				if ( normals != primitive.attributes.end() )
 				{
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::vec<float, 3>>
-					(
-						gltf_asset, gltf_asset.accessors[normals->accessorIndex],
-						[&](fastgltf::math::vec<float, 3> v, size_t index)
-						{
-							vertices[initial_vtx + index].normal = glm::vec3(v[0], v[1], v[2]);
-						}
-					);
+						(
+							gltf_asset, gltf_asset.accessors[normals->accessorIndex],
+							[&](fastgltf::math::vec<float, 3> v, size_t index)
+							{
+								vertices[initial_vtx + index].normal = glm::vec3(v[0], v[1], v[2]);
+							}
+						);
 				}
 
 				// load UVs
 				const auto uv = primitive.findAttribute("TEXCOORD_0");
-				if (uv != primitive.attributes.end())
+				if ( uv != primitive.attributes.end() )
 				{
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::vec<float, 2>>(
 						gltf_asset, gltf_asset.accessors[uv->accessorIndex],
@@ -367,7 +372,7 @@ namespace Anni::ModelLoader
 
 				// load vertex colors
 				const auto colors = primitive.findAttribute("COLOR_0");
-				if (colors != primitive.attributes.end())
+				if ( colors != primitive.attributes.end() )
 				{
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::vec<float, 4>>(
 						gltf_asset, gltf_asset.accessors[colors->accessorIndex],
@@ -379,7 +384,7 @@ namespace Anni::ModelLoader
 
 				// load tangent
 				const auto tangent = primitive.findAttribute("TANGENT");
-				if (tangent != primitive.attributes.end())
+				if ( tangent != primitive.attributes.end() )
 				{
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::vec<float, 4>>(
 						gltf_asset, gltf_asset.accessors[tangent->accessorIndex],
@@ -390,7 +395,7 @@ namespace Anni::ModelLoader
 				}
 
 				// load material index
-				if (primitive.materialIndex.has_value())
+				if ( primitive.materialIndex.has_value() )
 				{
 					homo_mat_tris.material_index = primitive.materialIndex.value();
 				}
@@ -411,13 +416,13 @@ namespace Anni::ModelLoader
 	void LoadedModel::Factory::LoadSceneNodes(const fastgltf::Asset& gltf_asset, std::unique_ptr<LoadedModel>& loading_result)
 	{
 		// LOAD ALL NODES AND THEIR MESHES
-		for (auto [node_index, node] : std::ranges::views::enumerate(gltf_asset.nodes))
+		for ( auto [node_index, node] : std::ranges::views::enumerate(gltf_asset.nodes) )
 		{
 			std::shared_ptr<Node> new_node;
 
 			// find if the node has a mesh_asset, and if it does then hook it to the mesh_asset
 			// pointer and allocate it with the meshnode class
-			if (node.meshIndex.has_value())
+			if ( node.meshIndex.has_value() )
 			{
 				new_node = std::make_shared<MeshNode>(&loading_result->m_mesh_assets[node.meshIndex.value()]);
 			}
@@ -471,11 +476,11 @@ namespace Anni::ModelLoader
 	{
 		//> LOAD_SCENE_GRAPH
 		// run loop again to setup scene graph hierarchy and refresh transform
-		for (auto [node_index, node_from_gltf] : std::ranges::views::enumerate(gltf_asset.nodes))
+		for ( auto [node_index, node_from_gltf] : std::ranges::views::enumerate(gltf_asset.nodes) )
 		{
 			const std::shared_ptr<Node>& already_loaded_node = loading_result->m_scene_nodes[node_index];
 
-			for (auto& c : node_from_gltf.children)
+			for ( auto& c : node_from_gltf.children )
 			{
 				already_loaded_node->children.push_back(loading_result->m_scene_nodes[c]);
 				loading_result->m_scene_nodes[c]->parent = already_loaded_node;
@@ -483,12 +488,12 @@ namespace Anni::ModelLoader
 		}
 
 		// find the top nodes, with no parents
-		for (auto& node : loading_result->m_scene_nodes)
+		for ( auto& node : loading_result->m_scene_nodes )
 		{
-			if (!node->parent.lock())
+			if ( !node->parent.lock() )
 			{
 				loading_result->m_top_nodes.push_back(node);
-				node->RefreshTransform(glm::mat4{1.f});
+				node->RefreshTransform(glm::mat4{ 1.f });
 			}
 		}
 		//< load_scene_graph
@@ -508,7 +513,7 @@ Anni::ModelLoader::Node::Node() : IRenderable(), local_transform(), world_transf
 void Anni::ModelLoader::Node::RefreshTransform(const glm::mat4& parent_matrix)
 {
 	world_transform = parent_matrix * local_transform;
-	for (const auto& c : children)
+	for ( const auto& c : children )
 	{
 		c->RefreshTransform(world_transform);
 	}
@@ -517,7 +522,7 @@ void Anni::ModelLoader::Node::RefreshTransform(const glm::mat4& parent_matrix)
 void Anni::ModelLoader::Node::PreDrawToContext(const glm::mat4& top_matrix, DrawContext& ctx)
 {
 	// draw children
-	for (const auto& c : children)
+	for ( const auto& c : children )
 	{
 		c->PreDrawToContext(top_matrix, ctx);
 	}
@@ -532,7 +537,7 @@ Anni::ModelLoader::MeshNode::MeshNode(const LoadedMeshAsset* const mesh_asset_) 
 void Anni::ModelLoader::MeshNode::PreDrawToContext(const glm::mat4& top_matrix, DrawContext& ctx)
 {
 	const glm::mat4 node_matrix = top_matrix * world_transform;
-	for (auto& homo_mat_tris : mesh_asset->homo_mat_tris_array)
+	for ( auto& homo_mat_tris : mesh_asset->homo_mat_tris_array )
 	{
 		RenderRecord def;
 		def.index_count = homo_mat_tris.count;
@@ -551,20 +556,25 @@ Anni::ModelLoader::LoadedModel::LoadedModel(std::filesystem::path file_path) : m
 {
 }
 
+
 std::unique_ptr<Anni::ModelLoader::LoadedModel> Anni::ModelLoader::LoadedModel::Factory::LoadFromFile(const std::filesystem::path file_path)
 {
-	spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] [%s:%#] %v");
-	if (!file_path.has_extension())
+	if ( !file_path.has_extension() )
 	{
 		SPDLOG_ERROR("Provided file path doesn't have a file extension!");
 		std::exit(EXIT_FAILURE); // or std::exit(1);
 	}
 
-	auto loading_result = std::make_unique<LoadedModel>(file_path);
+	SPDLOG_INFO("Loading file from the file path: {}", file_path.string());
+
+	const auto raw_ptr_loading_result = new LoadedModel(file_path);
+	std::unique_ptr<LoadedModel> loading_result(raw_ptr_loading_result);
+
+
 	fastgltf::Parser gltf_parser{};
 
 	const std::string extension = file_path.extension().string();
-	if (".gltf" == extension)
+	if ( ".gltf" == extension )
 	{
 		LoadGltf(file_path, gltf_parser, loading_result);
 	}

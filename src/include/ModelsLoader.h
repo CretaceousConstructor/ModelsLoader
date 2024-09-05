@@ -11,6 +11,8 @@
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+
 
 namespace Anni::ModelLoader
 {
@@ -29,13 +31,13 @@ namespace Anni::ModelLoader
 			Repeat,
 		};
 
-		SamplerType min{SamplerType::Nearest};
-		SamplerType mag{SamplerType::Nearest};
-		SamplerType mipmap{SamplerType::Nearest};
+		SamplerType min{ SamplerType::Nearest };
+		SamplerType mag{ SamplerType::Nearest };
+		SamplerType mipmap{ SamplerType::Nearest };
 
-		AddressMode u_mode{AddressMode::ClampToEdge};
-		AddressMode v_mode{AddressMode::ClampToEdge};
-		AddressMode w_mode{AddressMode::ClampToEdge};
+		AddressMode u_mode{ AddressMode::ClampToEdge };
+		AddressMode v_mode{ AddressMode::ClampToEdge };
+		AddressMode w_mode{ AddressMode::ClampToEdge };
 	};
 
 	struct LoadedImage
@@ -173,7 +175,6 @@ namespace Anni::ModelLoader
 		LoadedModel(LoadedModel&&) = delete;
 		LoadedModel& operator=(const LoadedModel&) = delete;
 		LoadedModel& operator=(LoadedModel&&) = delete;
-
 	private:
 		LoadedModel(std::filesystem::path file_path);
 
@@ -181,7 +182,7 @@ namespace Anni::ModelLoader
 		class Factory
 		{
 		public:
-			static std::unique_ptr<LoadedModel> LoadFromFile(std::filesystem::path file_path);
+			std::unique_ptr<LoadedModel> LoadFromFile(std::filesystem::path file_path);
 
 		private:
 			static void LoadGltf(const std::filesystem::path& file_path, fastgltf::Parser& gltf_parser, std::unique_ptr<LoadedModel>& loading_result);
@@ -206,6 +207,9 @@ namespace Anni::ModelLoader
 		std::vector<LoadedMeshAsset> m_mesh_assets;
 		std::vector<std::shared_ptr<Node>> m_scene_nodes;
 		std::vector<std::shared_ptr<Node>> m_top_nodes;
+
+	public:
+		static Factory factory;
 	};
 }
 

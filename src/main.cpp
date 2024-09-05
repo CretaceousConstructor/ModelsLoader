@@ -8,7 +8,7 @@ int main()
 
 	
 	const std::filesystem::path sponza_path{"Sponza\\glTF\\Sponza.gltf"};
-	std::unique_ptr<Anni::ModelLoader::LoadedModel> sponza = Anni::ModelLoader::LoadFromFile(sponza_path);
+	std::unique_ptr<Anni::ModelLoader::LoadedModel> sponza = Anni::ModelLoader::LoadedModel::factory.LoadFromFile(sponza_path);
 
 	return 0;
 }
