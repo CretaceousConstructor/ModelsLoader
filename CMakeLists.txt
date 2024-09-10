@@ -33,7 +33,7 @@ if(NOT CMAKE_DEBUG_POSTFIX)
   set(CMAKE_DEBUG_POSTFIX d)
 endif()
 
-add_definitions(-DNOMINMAX) #present window's shit from fucking up us.
+add_definitions(-DNOMINMAX) #prevent window's shit from fucking up us.
 
 
 # =============================================================
@@ -46,7 +46,7 @@ add_subdirectory(external/fastgltf)
 set_property(TARGET fastgltf PROPERTY FOLDER "Dependencies")
 
 
-# 
+# Spdlog
 message(STATUS "Installing spdlog via submodule")
 set(BUILD_STATIC_LIBS ON)
 add_subdirectory(external/spdlog)
@@ -96,14 +96,19 @@ target_link_libraries(
     glm
     stb_image
 )
+target_link_libraries(
+    ${PROJECT_NAME}
+    PUBLIC
+    spdlog
+)
 
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC src/include
   PUBLIC external/spdlog/include/spdlog
-  PUBLIC external/fastgltf
-  PUBLIC external/glm
-  PUBLIC external/stb_image
+  PRIVATE external/fastgltf
+  PRIVATE external/glm
+  PRIVATE external/stb_image
 )
 
 add_dependencies(
