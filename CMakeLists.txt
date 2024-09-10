@@ -84,10 +84,10 @@ endforeach()
 
 
 # =============================================================
+# Create a normal target that uses spdlog internally
+add_library(ModelsLoader ${FILE_SOURCES})
 
-add_executable(ModelsLoader ${FILE_SOURCES})
 # Finish Dependencies
-
 target_link_libraries(
     ${PROJECT_NAME}
     PRIVATE
@@ -96,16 +96,11 @@ target_link_libraries(
     glm
     stb_image
 )
-target_link_libraries(
-    ${PROJECT_NAME}
-    PUBLIC
-    spdlog
-)
 
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC src/include
-  PUBLIC external/spdlog/include/spdlog
+  PRIVATE external/spdlog/include/spdlog
   PRIVATE external/fastgltf
   PRIVATE external/glm
   PRIVATE external/stb_image
